@@ -1,8 +1,12 @@
 package com.dreamcreators.blastcolors;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.ClipData;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.media.AudioAttributes;
 import android.media.SoundPool;
 import android.os.Build;
@@ -12,19 +16,20 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.DragEvent;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements View.OnDragListener {
-    private TextView scoreText;
+    private TextView scoreText, tv_message;
     private TextView highScoreText;
-    public Button colorButton;
+    public ImageButton colorButton;
     private int score = 0;
     private int highScore = 0;
     private Random random;
@@ -37,6 +42,8 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
     private View dropArea;
     private SoundPool soundPool;
     private int tapPopSound, endGameSound, loseSound, earnCoinSound;
+    private TextView floatingText;
+    private ArrayList<String> words;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,11 +51,12 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-
+        floatingText = findViewById(R.id.floatingText);
         scoreText = findViewById(R.id.scoreText);
         colorButton = findViewById(R.id.colorButton);
         highScoreText = findViewById(R.id.highScoreText); // New TextView for high score
         timerText = findViewById(R.id.timerText);
+        tv_message = findViewById(R.id.tv_message);
         dropArea = findViewById(R.id.dropArea);
 
         // Initialize SoundPool
@@ -67,6 +75,26 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
         endGameSound = soundPool.load(this, R.raw.end_game, 1);
         earnCoinSound = soundPool.load(this, R.raw.earn_coin, 1);
 
+        words = new ArrayList<>();
+        words.add("Outstanding");
+        words.add("Excellent");
+        words.add("Fantastic");
+        words.add("Remarkable");
+        words.add("Impressive");
+        words.add("Superb");
+        words.add("Brilliant");
+        words.add("Incredible");
+        words.add("Magnificent");
+        words.add("Wonderful");
+        words.add("Astounding");
+        words.add("Admirable");
+        words.add("Commendable");
+        words.add("Skillful");
+        words.add("Praiseworthy");
+        words.add("Inspiring");
+        words.add("Extraordinary");
+        words.add("Top-notch");
+        words.add("Fabulous");
 
         random = new Random();
         // Initialize SharedPreferences
@@ -105,13 +133,16 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
                 }
 
                 if (currentColor == Color.RED) {
+                    floatingText.setVisibility(View.INVISIBLE);
                     soundPool.play(loseSound, 1, 1, 0, 0, 1);
                     gameOver(); // Trigger game over if red
                 } else {
+                    floatingText.setVisibility(View.VISIBLE);
                     score++;
                     soundPool.play(tapPopSound, 1, 1, 0, 0, 1);
                     updateScore();
                     changeColor();
+                    floatText(displayRandomWord(), "1");
                 }
 
 
@@ -132,6 +163,50 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
         startTimer();*/
     }
 
+    private void floatText(String textToDisplay, String points) {
+        // Reset TextView position and size
+
+
+        tv_message.setText(textToDisplay+"!");
+        floatingText.setTranslationY(0);
+        floatingText.setScaleX(1);
+        floatingText.setScaleY(1);
+        if(points.equals("1")) {
+            floatingText.setText(" +1 Point ");
+        }else if(points.equals("10")){
+            floatingText.setText(" +10 Points ");
+        }else{
+            floatingText.setText("");
+        }
+
+
+        // Create ValueAnimator for floating up
+        ValueAnimator animator = ValueAnimator.ofFloat(0, -1000); // Adjust -1000 as needed
+        animator.setDuration(2000); // Duration of animation
+
+        // Update TextView position and size during animation
+        animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                float animatedValue = (float) animation.getAnimatedValue();
+                floatingText.setTranslationY(animatedValue);
+                float scale = 1 - (animatedValue / -1000); // Adjust scale logic if necessary
+                floatingText.setScaleX(scale);
+                floatingText.setScaleY(scale);
+            }
+        });
+
+        // Optional: Add listener to reset or remove the TextView after animation ends
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                // You can choose to hide or reset the text here if desired
+            }
+        });
+
+        animator.start();
+    }
+
     private void startTimer() {
         if (timerStarted) {
             countDownTimer = new CountDownTimer(timeLeftInMillis, 1000) {
@@ -145,6 +220,7 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
                 public void onFinish() {
                     colorButton.setEnabled(false);
                     // Handle end of game, for example: show final score, reset game, etc.
+                    floatText("Game Over! Your score: " + score, "0");
                     Toast.makeText(MainActivity.this, "Game Over! Your score: " + score, Toast.LENGTH_LONG).show();
                     // Reset the game after a short delay
                     new Handler().postDelayed(new Runnable() {
@@ -161,7 +237,7 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
     private void updateTimer() {
 
         int seconds = (int) (timeLeftInMillis / 1000);
-        timerText.setText("Time: " + seconds);
+        timerText.setText("" + seconds);
 
     }
 
@@ -169,7 +245,7 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
         score = 0;
         timeLeftInMillis = 30000; // Reset to 30 seconds
         timerStarted = false; // Reset the timer flag
-        colorButton.setText("Tap Me!");
+        // colorButton.setText("Tap Me!");
         updateScore();
         updateTimer();
         colorButton.setEnabled(true); // Re-enable the button
@@ -179,6 +255,7 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
 
 
     private void updateScore() {
+        floatingText.setText(" +1 Point ");
         scoreText.setText("Score: " + score);
         // Check and update high score
         if (score > highScore) {
@@ -190,6 +267,7 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
 
     private void updateScore(int increment) {
         score += increment;
+
         scoreText.setText("Score: " + score);
         // Check and update high score
         if (score > highScore) {
@@ -206,9 +284,10 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
         countDownTimer.cancel();
         timerStarted = false;
         dropArea.setVisibility(View.INVISIBLE);
-        colorButton.setBackgroundColor(Color.BLACK);
-        colorButton.setText("Game Over!");
-        colorButton.setTextColor(Color.WHITE);
+        colorButton.setColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
+        //floatingText.setText("Game Over!");
+        floatText("Game Over! Your score: " + score , "0");
+        // colorButton.setBackgroundColor(Color.WHITE);
         Toast.makeText(MainActivity.this, "Game Over! You tapped red! Your score: " + score, Toast.LENGTH_LONG).show();
         new Handler().postDelayed(new Runnable() {
             @Override
@@ -227,13 +306,25 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
         int randomValue = random.nextInt(100); // Random value from 0 to 99
         if (timerStarted && randomValue < 10) { // 10% chance to be red
             currentColor = Color.RED;
-            colorButton.setText("Throw Me!");// Set to red
+
+            tv_message.setTextColor(currentColor);
+            //floatText("Long press and drag the pizza to the plate", "0");
+            colorButton.clearColorFilter();
+            int transparentColor = Color.argb(0, 255, 255, 255); // Fully transparent
+            colorButton.setColorFilter(transparentColor, PorterDuff.Mode.SRC_IN);
+            colorButton.setBackgroundResource(R.drawable.pizza);
+            tv_message.setText("Long press and drag the pizza to the plate");
+            // colorButton.setText("Throw Me!");// Set to red
             dropArea.setVisibility(View.VISIBLE);
         } else {
             currentColor = Color.rgb(random.nextInt(256), random.nextInt(256), random.nextInt(256)); // Generate other colors
             dropArea.setVisibility(View.INVISIBLE);
+            colorButton.clearColorFilter();
+            tv_message.setTextColor(currentColor);
+            colorButton.setBackground(getDrawable(R.drawable.raw));
+            colorButton.setColorFilter(currentColor, PorterDuff.Mode.SRC_IN);
         }
-        colorButton.setBackgroundColor(currentColor);
+
     }
 
     private void saveHighScore() {
@@ -272,9 +363,10 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
             case DragEvent.ACTION_DROP:
                 if (layoutview instanceof View) {
                     //highlightTargetView((TextView) layoutview, false);
-                    colorButton.setText("Tap Me!");
+                    // colorButton.setText("Tap Me!");
                     soundPool.play(earnCoinSound, 1, 1, 0, 0, 1);
                     dropArea.setVisibility(View.INVISIBLE);
+                    floatText(displayRandomWord(), "10");
                     updateScore(10); // Increase score by 10
                     changeColor();
                 }
@@ -295,5 +387,16 @@ public class MainActivity extends AppCompatActivity implements View.OnDragListen
                 break;
         }
         return true;
+    }
+
+    private String displayRandomWord() {
+        // Pick a random word from the ArrayList
+        String randomWord = "";
+        Random random = new Random();
+        int randomIndex = random.nextInt(words.size());
+        randomWord = words.get(randomIndex);
+
+        // Display the word in the TextView
+        return randomWord;
     }
 }
